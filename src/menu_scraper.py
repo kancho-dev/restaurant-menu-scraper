@@ -8,7 +8,6 @@ from loguru import logger
 from playwright.sync_api import sync_playwright, Page, Browser
 import requests
 from PIL import Image
-import json
 
 class MenuScraper:
     """A class to scrape daily lunch menu images from Facebook and share them on Google Chat."""
@@ -141,6 +140,30 @@ class MenuScraper:
             logger.error(f"Failed to send menu to Google Chat: {str(e)}")
             raise
     
+    def clean_old_images(self) -> None:
+        """Remove menu images older than 2 days from the screenshots directory."""
+        logger.info("Cleaning old menu images...")
+        try:
+            today = datetime.now()
+            # Get all menu_*.png files
+            for image_file in self.screenshot_dir.glob("menu_*.png"):
+                try:
+                    # Extract date from filename (format: menu_YYYYMMDD.png)
+                    date_str = image_file.stem.split('_')[1]
+                    file_date = datetime.strptime(date_str, '%Y%m%d')
+                    
+                    # If image is older than 2 days, delete it
+                    if (today - file_date).days > 2:
+                        logger.info(f"Removing old menu image: {image_file.name}")
+                        image_file.unlink()
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Could not parse date from filename {image_file.name}: {str(e)}")
+                    continue
+                
+        except Exception as e:
+            logger.error(f"Error cleaning old images: {str(e)}")
+            # Don't raise the exception - we don't want to break the main flow if cleanup fails
+    
     def run(self) -> None:
         """Main execution method to scrape and share the menu."""
         logger.info("Starting menu scraping process...")
@@ -181,6 +204,9 @@ class MenuScraper:
                     image_path = self.screenshot_dir / f"menu_{datetime.now().strftime('%Y%m%d')}.png"
                     page.goto(image_url)
                     page.screenshot(path=str(image_path))
+                    
+                    # Clean old images after successfully saving new one
+                    self.clean_old_images()
                     
                     # Validate saved image
                     try:

@@ -1,7 +1,6 @@
 # Core dependencies
 playwright==1.42.0  # Modern web automation
 python-dotenv==1.0.1  # Environment variable management
-schedule==1.2.1  # Task scheduling
 requests==2.31.0  # HTTP client for Google Chat webhook
 Pillow==10.2.0  # Image processing
 loguru==0.7.2  # Better logging

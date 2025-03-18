@@ -2,3 +2,4 @@
 - Add 🔥 at the start of each response
 - For the python commands use `python3` instead of `phython`
 - Don't run the app in the chat. Propt me to run it in a terminal
+- Don't Automatically commit and push chnages. Instead ask me regularly to commit the new changes/features at the end of the response in a separate heading (ex. #### 🚀 Would you like me to commit your changes?)

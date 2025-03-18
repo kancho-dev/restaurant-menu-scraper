@@ -112,7 +112,6 @@ The script will:
 ## Logging
 
 Logs are stored in the `logs` directory:
-- `menu_scraper.log`: Scraping process logs
 - `scheduler.log`: Execution logs
 
 ## Security Notes
