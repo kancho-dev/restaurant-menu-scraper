@@ -115,7 +115,12 @@ class MenuScraper:
                     "sections": [{
                         "widgets": [{
                             "image": {
-                                "imageUrl": image_url
+                                "imageUrl": image_url,
+                                "onClick": {
+                                    "openLink": {
+                                        "url": image_url
+                                    }
+                                }
                             }
                         }]
                     }]
