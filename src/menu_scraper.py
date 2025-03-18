@@ -101,22 +101,21 @@ class MenuScraper:
             logger.error(f"Error finding menu post: {str(e)}")
             raise
     
-    def send_to_google_chat(self, image_path: Path) -> None:
+    def send_to_google_chat(self, image_url: str) -> None:
         """Send the menu image to Google Chat using webhook."""
         logger.info("Sending menu to Google Chat...")
         
         try:
-            # Convert to absolute path before creating URI
-            abs_path = image_path.resolve()
-            
-            # Prepare the message
+            # Prepare the message with card format including the image
             message = {
-                "text": f"🍽️ Today's Lunch Menu ({datetime.now().strftime('%Y-%m-%d')})",
                 "cards": [{
+                    "header": {
+                        "title": f"🍽️ Today's Lunch Menu ({datetime.now().strftime('%Y-%m-%d')})"
+                    },
                     "sections": [{
                         "widgets": [{
                             "image": {
-                                "imageUrl": abs_path.as_uri()
+                                "imageUrl": image_url
                             }
                         }]
                     }]
@@ -126,6 +125,7 @@ class MenuScraper:
             # Send to webhook
             response = requests.post(
                 self.webhook_url,
+                headers={"Content-Type": "application/json"},
                 json=message
             )
             response.raise_for_status()
@@ -169,10 +169,10 @@ class MenuScraper:
                     })
                 """)
                 
-                # Find and download menu image
+                # Find menu image URL
                 image_url = self.find_todays_menu_post(page)
                 if image_url:
-                    # Save image
+                    # Save image locally for record keeping
                     image_path = self.screenshot_dir / f"menu_{datetime.now().strftime('%Y%m%d')}.png"
                     page.goto(image_url)
                     page.screenshot(path=str(image_path))
@@ -195,8 +195,8 @@ class MenuScraper:
                         logger.error(f"Failed to validate saved image: {str(e)}")
                         raise
                     
-                    # Send to Google Chat
-                    self.send_to_google_chat(image_path)
+                    # Send to Google Chat using the original Facebook image URL
+                    self.send_to_google_chat(image_url)
                 else:
                     logger.warning("No menu found for today")
                 
