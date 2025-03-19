@@ -109,7 +109,7 @@ class MenuScraper:
             message = {
                 "cards": [{
                     "header": {
-                        "title": f"🍽️ Today's Lunch Menu ({datetime.now().strftime('%Y-%m-%d')})"
+                        "title": f"🍽️ Обедното меню за днес ({datetime.now().strftime('%d-%m-%Y')})"
                     },
                     "sections": [{
                         "widgets": [{
