@@ -2,4 +2,31 @@
 - Add 🔥 at the start of each response
 - For the python commands use `python3` instead of `phython`
 - Don't run the app in the chat. Propt me to run it in a terminal
-- When you've made changes to files don't automatically commit and push chnages. Instead ask me regularly to commit the new changes/features at the end of the response in a separate heading (ex. #### 🚀 Would you like me to commit your changes?)
+- When you've made changes to files don't automatically commit and push chnages. Instead: 
+    - Check if there are actual changes that needs to be commited. Use git commands for that (ex. `git status | cat`)
+    - If there are any changes summarize them in the chat
+    - Then ask me if I want to commit the new changes/features at the end of the response in a separate heading (ex. #### 🚀 Would you like me to commit your changes?)
+
+# PROJECT STRUCTURE
+```
+├── src/                    # Source code directory
+│   ├── main.py            # Main entry point for local execution
+│   ├── lambda_function.py # AWS Lambda handler and configuration
+│   └── menu_scraper.py    # Core menu scraping functionality
+│
+├── package/               # Lambda deployment package directory
+│   ├── *.py              # Copied source files
+│   └── dependencies/     # Installed Python dependencies
+│
+├── logs/                  # Log files directory
+│   └── scheduler.log      # Application execution logs
+│
+├── screenshots/           # Directory for storing menu screenshots
+│   └── *.png             # Menu image files
+│
+├── lambda_function.zip    # AWS Lambda deployment package
+├── .env                   # Environment variables configuration
+├── .env.example          # Example environment variables template
+├── requirements.txt      # Python dependencies
+└── README.md            # Project documentation
+```

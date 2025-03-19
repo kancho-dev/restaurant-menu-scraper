@@ -7,7 +7,9 @@ Automatically scrape daily lunch menu images from a Facebook page and share them
 - 🤖 Automated Facebook page scraping
 - 📸 Menu image extraction and full-size viewing
 - 💬 Google Chat integration with preview cards
-- ⏰ System-level scheduling (cron)
+- ⏰ Flexible deployment options:
+  - AWS Lambda for serverless execution
+  - System-level scheduling (cron) for local runs
 - 📝 Detailed logging
 
 ## Prerequisites
@@ -15,9 +17,11 @@ Automatically scrape daily lunch menu images from a Facebook page and share them
 - Python 3.8+
 - Facebook account with access to the target page
 - Google Chat webhook URL
-- Linux/Mac with cron (or Windows with Task Scheduler)
+- Choose your deployment method:
+  - AWS Lambda account (for serverless)
+  - Linux/Mac with cron or Windows with Task Scheduler (for local)
 
-## Installation
+## Local Installation
 
 1. Clone this repository:
 ```bash
@@ -51,7 +55,49 @@ Edit the `.env` file with your:
 - Target Facebook page URL
 - Google Chat webhook URL
 
-## Setting Up Scheduled Runs
+## AWS Lambda Deployment
+
+1. Prepare the deployment package:
+```bash
+# Create a package directory
+mkdir package
+
+# Install dependencies in the package directory
+pip install -r requirements.txt -t package/
+
+# Copy source files
+cp src/*.py package/
+
+# Install Playwright browser
+cd package && playwright install chromium
+
+# Create deployment ZIP
+zip -r ../lambda_function.zip .
+cd ..
+```
+
+2. Configure AWS Lambda:
+   - Create a new Lambda function
+   - Runtime: Python 3.8 or later
+   - Memory: At least 512MB (recommended 1024MB)
+   - Timeout: 2-3 minutes
+   - Handler: `lambda_function.lambda_handler`
+
+3. Set environment variables in Lambda:
+   - `FACEBOOK_PAGE_URL`: Your target Facebook page URL
+   - `GOOGLE_CHAT_WEBHOOK_URL`: Your Google Chat webhook URL
+
+4. Upload the deployment package:
+   - Go to Lambda console
+   - Select your function
+   - Upload `lambda_function.zip`
+
+5. Set up a trigger:
+   - Add EventBridge (CloudWatch Events) trigger
+   - Create a new rule with schedule expression
+   - Example for daily at 11:00 AM UTC: `cron(0 11 * * ? *)`
+
+## Local Scheduled Runs
 
 ### Linux/Mac (Using Cron)
 
@@ -106,13 +152,14 @@ python3 src/main.py
 The script will:
 1. Log into Facebook
 2. Find today's menu post
-3. Extract and save the menu image
+3. Extract and save the menu image (local mode only)
 4. Share it in your Google Chat with both preview and full-size viewing options
 
 ## Logging
 
-Logs are stored in the `logs` directory:
-- `scheduler.log`: Execution logs
+Logs are stored in:
+- Local mode: `logs/scheduler.log`
+- Lambda mode: CloudWatch Logs
 
 ## Security Notes
 
@@ -120,6 +167,7 @@ Logs are stored in the `logs` directory:
 - Never commit the `.env` file
 - Use a dedicated Facebook account for scraping if possible
 - Ensure proper file permissions for cron jobs
+- For Lambda, use AWS Secrets Manager for sensitive data
 
 ## Troubleshooting
 
@@ -138,7 +186,13 @@ Logs are stored in the `logs` directory:
    - Webhook has proper permissions
    - Image is accessible to Google Chat
 
-4. **Cron job not running**: Check:
+4. **Lambda specific issues**:
+   - Check CloudWatch Logs for errors
+   - Verify memory and timeout settings
+   - Ensure all environment variables are set
+   - Check Lambda execution role permissions
+
+5. **Cron job not running**: Check:
    - Correct paths in crontab
    - Cron service is running (`systemctl status cron`)
    - Log files for errors

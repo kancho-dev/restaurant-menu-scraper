@@ -19,10 +19,12 @@ class MenuScraper:
         # Load configuration
         self.fb_page_url = os.getenv('FACEBOOK_PAGE_URL')
         self.webhook_url = os.getenv('GOOGLE_CHAT_WEBHOOK_URL')
-        self.screenshot_dir = Path(os.getenv('SCREENSHOT_DIR', './screenshots'))
+        self.is_lambda = bool(os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
         
-        # Create screenshots directory if it doesn't exist
-        self.screenshot_dir.mkdir(parents=True, exist_ok=True)
+        # Only create screenshot directory if not running in Lambda
+        if not self.is_lambda:
+            self.screenshot_dir = Path('./screenshots')
+            self.screenshot_dir.mkdir(parents=True, exist_ok=True)
     
     def find_todays_menu_post(self, page: Page) -> Optional[str]:
         """Find today's menu post and return the image URL if found."""
@@ -35,10 +37,11 @@ class MenuScraper:
             logger.info(f"Navigating to {self.fb_page_url}")
             response = page.goto(self.fb_page_url, wait_until='networkidle')
             
-            # Take a screenshot right after page load for debugging
-            debug_path = self.screenshot_dir / "initial_load.png"
-            page.screenshot(path=str(debug_path))
-            logger.info(f"Saved initial page screenshot to {debug_path}")
+            # Only take debug screenshots if not in Lambda
+            if not self.is_lambda:
+                debug_path = self.screenshot_dir / "initial_load.png"
+                page.screenshot(path=str(debug_path))
+                logger.info(f"Saved initial page screenshot to {debug_path}")
             
             # Log the page title to verify we're on the right page
             logger.info(f"Page title: {page.title()}")
@@ -60,12 +63,13 @@ class MenuScraper:
             
             if len(posts) == 0:
                 logger.warning("No posts found with any selector")
-                # Save page content for debugging
-                content = page.content()
-                debug_html = self.screenshot_dir / "page_content.html"
-                with open(debug_html, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                logger.info(f"Saved page HTML to {debug_html}")
+                # Save debug HTML only if not in Lambda
+                if not self.is_lambda:
+                    content = page.content()
+                    debug_html = self.screenshot_dir / "page_content.html"
+                    with open(debug_html, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    logger.info(f"Saved page HTML to {debug_html}")
                 return None
             
             # Look for posts from today
@@ -142,6 +146,9 @@ class MenuScraper:
     
     def clean_old_images(self) -> None:
         """Remove menu images older than 2 days from the screenshots directory."""
+        if self.is_lambda:
+            return  # Skip cleanup in Lambda environment
+            
         logger.info("Cleaning old menu images...")
         try:
             today = datetime.now()
@@ -200,31 +207,32 @@ class MenuScraper:
                 # Find menu image URL
                 image_url = self.find_todays_menu_post(page)
                 if image_url:
-                    # Save image locally for record keeping
-                    image_path = self.screenshot_dir / f"menu_{datetime.now().strftime('%Y%m%d')}.png"
-                    page.goto(image_url)
-                    page.screenshot(path=str(image_path))
-                    
-                    # Clean old images after successfully saving new one
-                    self.clean_old_images()
-                    
-                    # Validate saved image
-                    try:
-                        with Image.open(image_path) as img:
-                            width, height = img.size
-                            logger.info(f"Successfully saved image: {image_path}")
-                            logger.info(f"Image size: {width}x{height} pixels")
-                            logger.info(f"Image format: {img.format}")
-                            
-                            # Basic validation
-                            if width < 100 or height < 100:
-                                logger.warning("Image seems too small, might not be a valid menu")
-                            
-                            if os.path.getsize(image_path) < 1024:  # Less than 1KB
-                                logger.warning("Image file is suspiciously small")
-                    except Exception as e:
-                        logger.error(f"Failed to validate saved image: {str(e)}")
-                        raise
+                    # Only save image locally if not in Lambda
+                    if not self.is_lambda:
+                        image_path = self.screenshot_dir / f"menu_{datetime.now().strftime('%Y%m%d')}.png"
+                        page.goto(image_url)
+                        page.screenshot(path=str(image_path))
+                        
+                        # Clean old images after successfully saving new one
+                        self.clean_old_images()
+                        
+                        # Validate saved image
+                        try:
+                            with Image.open(image_path) as img:
+                                width, height = img.size
+                                logger.info(f"Successfully saved image: {image_path}")
+                                logger.info(f"Image size: {width}x{height} pixels")
+                                logger.info(f"Image format: {img.format}")
+                                
+                                # Basic validation
+                                if width < 100 or height < 100:
+                                    logger.warning("Image seems too small, might not be a valid menu")
+                                
+                                if os.path.getsize(image_path) < 1024:  # Less than 1KB
+                                    logger.warning("Image file is suspiciously small")
+                        except Exception as e:
+                            logger.error(f"Failed to validate saved image: {str(e)}")
+                            raise
                     
                     # Send to Google Chat using the original Facebook image URL
                     self.send_to_google_chat(image_url)

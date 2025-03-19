@@ -37,6 +37,8 @@ env/
 screenshots/
 logs/
 *.log
+package/
+lambda_function.zip
 
 # OS specific
 .DS_Store
