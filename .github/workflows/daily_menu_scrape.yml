@@ -30,7 +30,7 @@ jobs:
         FACEBOOK_PAGE_URL: ${{ secrets.FACEBOOK_PAGE_URL }}
         LOG_LEVEL: INFO
       run: |
-        python3 src/menu_scraper.py
+        python3 src/main.py
         
     - name: Report failure
       if: failure()
