@@ -3,3 +3,5 @@ requests==2.31.0  # HTTP client for making requests
 beautifulsoup4==4.12.3  # HTML parsing
 python-dotenv==1.0.1  # Environment variable management
 loguru==0.7.2  # Better logging
+playwright==1.42.0  # Web automation and scraping
+Pillow==10.2.0  # Image processing
