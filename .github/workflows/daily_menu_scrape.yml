@@ -2,9 +2,7 @@ name: Daily Menu Scraper
 
 on:
   schedule:
-    # Runs at 10:10 AM Europe/Sofia time (7:10 UTC during DST, 8:10 UTC during standard time) every work day (Mon-Fri)
-    # GitHub Actions uses UTC time, so this will automatically adjust for DST changes
-    - cron: '10 7 * * 1-5'
+    - cron: '5 8 * * 1-5'
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
