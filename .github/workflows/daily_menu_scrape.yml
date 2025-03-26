@@ -8,6 +8,8 @@ on:
 jobs:
   scrape-and-notify:
     runs-on: ubuntu-latest
+    # Only run scheduled jobs on main branch, allow manual triggers on any branch
+    if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v4
