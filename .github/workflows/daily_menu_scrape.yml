@@ -22,8 +22,16 @@ jobs:
         CURRENT_YEAR=$(date +%Y)
         COUNTRY_CODE="BG"
         
-        # Fetch the list of holidays
-        HOLIDAYS=$(curl -s "https://date.nager.at/api/v3/PublicHolidays/$CURRENT_YEAR/$COUNTRY_CODE")
+        # Initialize is_holiday as false
+        echo "is_holiday=false" >> $GITHUB_OUTPUT
+        
+        # Fetch the list of holidays with timeout and error handling
+        HOLIDAYS=$(curl -s -f -m 10 "https://date.nager.at/api/v3/PublicHolidays/$CURRENT_YEAR/$COUNTRY_CODE" || echo "API_ERROR")
+        
+        if [ "$HOLIDAYS" = "API_ERROR" ]; then
+          echo "⚠️ Warning: Holiday API request failed or timed out. Continuing workflow as non-holiday."
+          exit 0
+        fi
         
         # Check if today is in the list of holidays
         if echo "$HOLIDAYS" | grep -q "\"date\":\"$TODAY\""; then
@@ -31,7 +39,6 @@ jobs:
           echo "Today ($TODAY) is a holiday, skipping workflow"
           exit 78  # Special exit code that GitHub Actions interprets as neutral
         else
-          echo "is_holiday=false" >> $GITHUB_OUTPUT
           echo "Today ($TODAY) is not a holiday, continuing workflow"
         fi
     
