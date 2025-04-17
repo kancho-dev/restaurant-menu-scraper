@@ -19,7 +19,6 @@ jobs:
       run: |
         # Get current date in YYYY-MM-DD format
         TODAY=$(date +%Y-%m-%d)
-        TOMORROW=$(date -d '1 day' +%Y-%m-%d)
         CURRENT_YEAR=$(date +%Y)
         COUNTRY_CODE="BG"
         
@@ -32,10 +31,6 @@ jobs:
           exit 78  # Special exit code that GitHub Actions interprets as neutral
         else
           echo "Today ($TODAY) is not a holiday, continuing workflow"
-        fi
-
-        if echo "$HOLIDAYS" | grep -q "\"date\":\"$TOMORROW\""; then
-          echo "Tomorrow ($TOMORROW) is a holiday, TESTING workflow"
         fi
     
     - name: Set up Python 3.11
