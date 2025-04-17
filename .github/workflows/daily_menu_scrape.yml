@@ -27,9 +27,11 @@ jobs:
         
         # Check if today is in the list of holidays
         if echo "$HOLIDAYS" | grep -q "\"date\":\"$TODAY\""; then
+          echo "is_holiday=true" >> $GITHUB_OUTPUT
           echo "Today ($TODAY) is a holiday, skipping workflow"
           exit 78  # Special exit code that GitHub Actions interprets as neutral
         else
+          echo "is_holiday=false" >> $GITHUB_OUTPUT
           echo "Today ($TODAY) is not a holiday, continuing workflow"
         fi
     
@@ -71,7 +73,8 @@ jobs:
         python3 src/main.py
         
     - name: Report failure
-      if: failure()
+      # Only report if it's a genuine failure (not a holiday skip)
+      if: failure() && steps.check-holiday.outputs.is_holiday != 'true'
       env:
         GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
       run: |
