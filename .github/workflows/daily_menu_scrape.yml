@@ -14,6 +14,30 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Check if today is a holiday
+      id: check-holiday
+      run: |
+        # Get current date in YYYY-MM-DD format
+        TODAY=$(date +%Y-%m-%d)
+        TOMORROW=$(date -d '1 day' +%Y-%m-%d)
+        CURRENT_YEAR=$(date +%Y)
+        COUNTRY_CODE="BG"
+        
+        # Fetch the list of holidays
+        HOLIDAYS=$(curl -s "https://date.nager.at/api/v3/PublicHolidays/$CURRENT_YEAR/$COUNTRY_CODE")
+        
+        # Check if today is in the list of holidays
+        if echo "$HOLIDAYS" | grep -q "\"date\":\"$TODAY\""; then
+          echo "Today ($TODAY) is a holiday, skipping workflow"
+          exit 78  # Special exit code that GitHub Actions interprets as neutral
+        else
+          echo "Today ($TODAY) is not a holiday, continuing workflow"
+        fi
+
+        if echo "$HOLIDAYS" | grep -q "\"date\":\"$TOMORROW\""; then
+          echo "Tomorrow ($TOMORROW) is a holiday, TESTING workflow"
+        fi
+    
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
