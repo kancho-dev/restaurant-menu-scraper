@@ -37,7 +37,7 @@ jobs:
         if echo "$HOLIDAYS" | grep -q "\"date\":\"$TODAY\""; then
           echo "is_holiday=true" >> $GITHUB_OUTPUT
           echo "Today ($TODAY) is a holiday, skipping workflow"
-          exit 78  # Special exit code that GitHub Actions interprets as neutral
+          exit 0  # Clean exit
         else
           echo "Today ($TODAY) is not a holiday, continuing workflow"
         fi
