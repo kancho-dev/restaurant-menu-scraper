@@ -30,25 +30,25 @@ jobs:
         
         if [ "$HOLIDAYS" = "API_ERROR" ]; then
           echo "⚠️ Warning: Holiday API request failed or timed out. Continuing workflow as non-holiday."
-          exit 0
-        fi
-        
-        # Check if today is in the list of holidays
-        if echo "$HOLIDAYS" | grep -q "\"date\":\"$TODAY\""; then
-          echo "is_holiday=true" >> $GITHUB_OUTPUT
-          echo "Today ($TODAY) is a holiday, skipping workflow"
-          exit 0  # Clean exit
         else
-          echo "Today ($TODAY) is not a holiday, continuing workflow"
+          # Check if today is in the list of holidays
+          if echo "$HOLIDAYS" | grep -q "\"date\":\"$TODAY\""; then
+            echo "is_holiday=true" >> $GITHUB_OUTPUT
+            echo "Today ($TODAY) is a holiday, skipping workflow"
+          else
+            echo "Today ($TODAY) is not a holiday, continuing workflow"
+          fi
         fi
     
     - name: Set up Python 3.11
+      if: steps.check-holiday.outputs.is_holiday != 'true'
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-        cache: 'pip' # Enable pip caching
+        cache: 'pip'
         
     - name: Cache Playwright browsers
+      if: steps.check-holiday.outputs.is_holiday != 'true'
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
@@ -57,21 +57,25 @@ jobs:
           playwright-${{ runner.os }}-
 
     - name: Cache and Install APT packages
+      if: steps.check-holiday.outputs.is_holiday != 'true'
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libgbm1 libnss3 libpango-1.0-0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxkbcommon0 libwayland-client0 libglu1-mesa xvfb
         version: 1.0
         
     - name: Install Python dependencies
+      if: steps.check-holiday.outputs.is_holiday != 'true'
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
     - name: Install Playwright
+      if: steps.check-holiday.outputs.is_holiday != 'true'
       run: |
         playwright install chromium
         
     - name: Run menu scraper
+      if: steps.check-holiday.outputs.is_holiday != 'true'
       env:
         GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         FACEBOOK_PAGE_URL: ${{ secrets.FACEBOOK_PAGE_URL }}
@@ -80,7 +84,6 @@ jobs:
         python3 src/main.py
         
     - name: Report failure
-      # Only report if it's a genuine failure (not a holiday skip)
       if: failure() && steps.check-holiday.outputs.is_holiday != 'true'
       env:
         GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
