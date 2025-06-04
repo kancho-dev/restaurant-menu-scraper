@@ -1,6 +1,6 @@
 # Restaurant Menu Scraper
 
-Automatically scrape daily lunch menu images from a Facebook page and share them with your colleagues via Google Chat.
+Automatically scrape daily lunch menu images from one or more Facebook pages and share them with your colleagues via Google Chat.
 
 ## Features
 
@@ -48,7 +48,7 @@ cp config/.env.example .env
 
 Edit the `.env` file with your:
 - Facebook credentials
-- Target Facebook page URL
+- Target Facebook page URLs (comma separated) `FACEBOOK_PAGE_URLS`
 - Google Chat webhook URL
 
 ## Setting Up Scheduled Runs

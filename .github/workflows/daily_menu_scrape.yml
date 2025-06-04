@@ -78,6 +78,7 @@ jobs:
       if: steps.check-holiday.outputs.is_holiday != 'true'
       env:
         GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
+        FACEBOOK_PAGE_URLS: ${{ secrets.FACEBOOK_PAGE_URLS }}
         FACEBOOK_PAGE_URL: ${{ secrets.FACEBOOK_PAGE_URL }}
         LOG_LEVEL: INFO
       run: |
