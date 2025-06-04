@@ -121,16 +121,30 @@ class MenuScraper:
                         "title": f"🍽️ Обедното меню за днес ({datetime.now().strftime('%d-%m-%Y')})"
                     },
                     "sections": [{
-                        "widgets": [{
-                            "image": {
-                                "imageUrl": image_url,
-                                "onClick": {
-                                    "openLink": {
-                                        "url": image_url
+                        "widgets": [
+                            {
+                                "image": {
+                                    "imageUrl": image_url,
+                                    "onClick": {
+                                        "openLink": {
+                                            "url": image_url
+                                        }
                                     }
                                 }
+                            },
+                            {
+                                "buttons": [{
+                                    "textButton": {
+                                        "text": "Виж във Facebook",
+                                        "onClick": {
+                                            "openLink": {
+                                                "url": self.fb_page_url
+                                            }
+                                        }
+                                    }
+                                }]
                             }
-                        }]
+                        ]
                     }]
                 }]
             }
