@@ -17,7 +17,18 @@ class MenuScraper:
         load_dotenv()
         
         # Load configuration
-        self.fb_page_url = os.getenv('FACEBOOK_PAGE_URL')
+        fb_pages = os.getenv('FACEBOOK_PAGE_URLS')
+        if fb_pages:
+            self.fb_page_urls = [url.strip() for url in fb_pages.split(',') if url.strip()]
+        else:
+            single_page = os.getenv('FACEBOOK_PAGE_URL')
+            self.fb_page_urls = [single_page] if single_page else []
+
+        if not self.fb_page_urls:
+            raise ValueError('No Facebook page URLs provided')
+
+        # Keep the first page for backward compatibility where a single page is expected
+        self.fb_page_url = self.fb_page_urls[0]
         self.webhook_url = os.getenv('GOOGLE_CHAT_WEBHOOK_URL')
         
         # Screenshot directory is optional
@@ -31,16 +42,16 @@ class MenuScraper:
         else:
             logger.info("Screenshot saving is disabled")
     
-    def find_todays_menu_post(self, page: Page) -> Optional[str]:
-        """Find today's menu post and return the image URL if found."""
+    def find_todays_menu_post(self, page: Page, page_url: str) -> Optional[str]:
+        """Find today's menu post on the given page and return the image URL if found."""
         logger.info("Searching for today's menu post...")
         
         try:
             # Use a reasonable timeout
             page.set_default_timeout(30000)  # 30 seconds is plenty
             
-            logger.info(f"Navigating to {self.fb_page_url}")
-            response = page.goto(self.fb_page_url, wait_until='networkidle')
+            logger.info(f"Navigating to {page_url}")
+            response = page.goto(page_url, wait_until='networkidle')
             
             # Take a screenshot right after page load for debugging (only if screenshot_dir is set)
             if self.screenshot_dir:
@@ -109,7 +120,7 @@ class MenuScraper:
             logger.error(f"Error finding menu post: {str(e)}")
             raise
     
-    def send_to_google_chat(self, image_url: str) -> None:
+    def send_to_google_chat(self, image_url: str, page_url: str) -> None:
         """Send the menu image to Google Chat using webhook."""
         logger.info("Sending menu to Google Chat...")
         
@@ -138,7 +149,7 @@ class MenuScraper:
                                         "text": "Виж във Facebook",
                                         "onClick": {
                                             "openLink": {
-                                                "url": self.fb_page_url
+                                                "url": page_url
                                             }
                                         }
                                     }
@@ -174,8 +185,9 @@ class MenuScraper:
             # Get all menu_*.png files
             for image_file in self.screenshot_dir.glob("menu_*.png"):
                 try:
-                    # Extract date from filename (format: menu_YYYYMMDD.png)
-                    date_str = image_file.stem.split('_')[1]
+                    # Extract date from filename (supports menu_<slug>_YYYYMMDD.png and legacy menu_YYYYMMDD.png)
+                    parts = image_file.stem.split('_')
+                    date_str = parts[-1]
                     file_date = datetime.strptime(date_str, '%Y%m%d')
                     
                     # If image is older than 2 days, delete it
@@ -223,40 +235,43 @@ class MenuScraper:
                     })
                 """)
                 
-                # Find menu image URL
-                image_url = self.find_todays_menu_post(page)
-                if image_url:
-                    # Save image locally only if screenshot directory is configured
-                    if self.screenshot_dir:
-                        image_path = self.screenshot_dir / f"menu_{datetime.now().strftime('%Y%m%d')}.png"
-                        page.goto(image_url)
-                        page.screenshot(path=str(image_path))
-                        
-                        # Clean old images after successfully saving new one
-                        self.clean_old_images()
-                        
-                        # Validate saved image
-                        try:
-                            with Image.open(image_path) as img:
-                                width, height = img.size
-                                logger.info(f"Successfully saved image: {image_path}")
-                                logger.info(f"Image size: {width}x{height} pixels")
-                                logger.info(f"Image format: {img.format}")
-                                
-                                # Basic validation
-                                if width < 100 or height < 100:
-                                    logger.warning("Image seems too small, might not be a valid menu")
-                                
-                                if os.path.getsize(image_path) < 1024:  # Less than 1KB
-                                    logger.warning("Image file is suspiciously small")
-                        except Exception as e:
-                            logger.error(f"Failed to validate saved image: {str(e)}")
-                            # Don't raise here, we can still try to send to Google Chat
-                    
-                    # Send to Google Chat using the original Facebook image URL
-                    self.send_to_google_chat(image_url)
-                else:
-                    logger.warning("No menu found for today")
+                for idx, page_url in enumerate(self.fb_page_urls):
+                    logger.info(f"Processing Facebook page: {page_url}")
+
+                    image_url = self.find_todays_menu_post(page, page_url)
+                    if image_url:
+                        # Save image locally only if screenshot directory is configured
+                        if self.screenshot_dir:
+                            slug = page_url.rstrip('/').split('/')[-1] or f"page{idx+1}"
+                            image_path = self.screenshot_dir / f"menu_{slug}_{datetime.now().strftime('%Y%m%d')}.png"
+                            page.goto(image_url)
+                            page.screenshot(path=str(image_path))
+
+                            # Clean old images after successfully saving new one
+                            self.clean_old_images()
+
+                            # Validate saved image
+                            try:
+                                with Image.open(image_path) as img:
+                                    width, height = img.size
+                                    logger.info(f"Successfully saved image: {image_path}")
+                                    logger.info(f"Image size: {width}x{height} pixels")
+                                    logger.info(f"Image format: {img.format}")
+
+                                    # Basic validation
+                                    if width < 100 or height < 100:
+                                        logger.warning("Image seems too small, might not be a valid menu")
+
+                                    if os.path.getsize(image_path) < 1024:  # Less than 1KB
+                                        logger.warning("Image file is suspiciously small")
+                            except Exception as e:
+                                logger.error(f"Failed to validate saved image: {str(e)}")
+                                # Don't raise here, we can still try to send to Google Chat
+
+                        # Send to Google Chat using the original Facebook image URL
+                        self.send_to_google_chat(image_url, page_url)
+                    else:
+                        logger.warning(f"No menu found for today on {page_url}")
                 
                 browser.close()
                 
